@@ -10,7 +10,12 @@ Run with:
 """
 
 import os
+import tempfile
 from pathlib import Path
+
+# Ensure Matplotlib config dir is writable on Windows
+os.environ.setdefault("MPLCONFIGDIR", tempfile.gettempdir())
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,14 +35,14 @@ def main():
         return
 
     st.set_page_config(
-        page_title="Gym & Fitness Center Membership Analytics",
+        page_title="Gym Membership Analytics",
         page_icon="🏋️‍♂️",
         layout="wide",
         initial_sidebar_state="expanded"
     )
 
     st.title("🏋️‍♂️ Gym & Fitness Center Membership Analytics")
-    st.markdown("### Operational Intelligence, Utilization Patterns & Member Retention")
+    st.markdown("### Operational Intelligence, Utilization Patterns & Retention Dashboard")
 
     # Locate dataset
     base_dir = Path(__file__).resolve().parent
@@ -97,23 +102,31 @@ def main():
     st.markdown("---")
 
     # Tabs for analytics
-    tab1, tab2, tab3, tab4 = st.tabs(["⏰ Peak Hours & Congestion", "🎯 Class Popularity", "📊 Tier Breakdown", "📋 Data Explorer"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
+        "⏰ Peak Hours & Congestion",
+        "🎯 Class Popularity",
+        "📊 Tier Breakdown",
+        "⚠️ Retention & Inactivity",
+        "📋 Data Explorer"
+    ])
 
     with tab1:
-        st.subheader("Hourly Check-In Footprint")
+        st.subheader("Hourly & Weekly Check-In Congestion")
         if total_checkins > 0:
             day_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-            pivot = filtered_df.pivot_table(
-                index="Weekday", columns="Visit_Hour", values="Checkin_ID", aggfunc="count", fill_value=0
-            ).reindex([d for d in day_order if d in filtered_df["Weekday"].unique()])
-            
-            fig, ax = plt.subplots(figsize=(12, 4))
-            sns.heatmap(pivot, cmap="YlOrRd", annot=True, fmt="d", cbar=True, ax=ax)
-            ax.set_title("Check-In Density Heatmap", fontsize=12, fontweight="bold")
-            ax.set_xlabel("Hour of Day (24h)")
-            ax.set_ylabel("Day of Week")
-            st.pyplot(fig)
-            plt.close()
+            available_days = [d for d in day_order if d in filtered_df["Weekday"].unique()]
+            if available_days:
+                pivot = filtered_df.pivot_table(
+                    index="Weekday", columns="Visit_Hour", values="Checkin_ID", aggfunc="count", fill_value=0
+                ).reindex(available_days)
+                
+                fig, ax = plt.subplots(figsize=(12, 4))
+                sns.heatmap(pivot, cmap="YlOrRd", annot=True, fmt="d", cbar=True, ax=ax)
+                ax.set_title("Check-In Density Heatmap (Weekday vs. 24h Clock)", fontsize=12, fontweight="bold")
+                ax.set_xlabel("Hour of Day (24h)")
+                ax.set_ylabel("Day of Week")
+                st.pyplot(fig)
+                plt.close()
 
     with tab2:
         st.subheader("Fitness Class & Studio Attendance")
@@ -123,18 +136,34 @@ def main():
             class_counts = class_df["Fitness_Class"].value_counts()
             
             fig, ax = plt.subplots(figsize=(8, 4))
-            sns.barplot(x=class_counts.values, y=class_counts.index, palette="mako", ax=ax, edgecolor="black")
-            ax.set_title("Ranked Attendance by Fitness Class", fontsize=12, fontweight="bold")
-            ax.set_xlabel("Total Visits")
-            ax.set_ylabel("Activity Category")
+            palette = sns.color_palette("viridis", len(class_counts))
+            bars = ax.bar(class_counts.index, class_counts.values, color=palette, edgecolor="black")
+            ax.set_title("Attendance Ranking by Fitness Class", fontsize=12, fontweight="bold")
+            ax.set_xlabel("Class / Activity")
+            ax.set_ylabel("Total Attendance")
+            for bar in bars:
+                h = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., h + 1, f"{int(h)}", ha="center", va="bottom", fontsize=9)
+            plt.xticks(rotation=15)
             st.pyplot(fig)
             plt.close()
 
     with tab3:
         st.subheader("Workout Duration Spread by Membership Tier")
         if total_checkins > 0:
+            tier_order = ["Basic", "Gold", "Platinum"]
+            available_tiers = [t for t in tier_order if t in filtered_df["Membership_Tier"].unique()]
             fig, ax = plt.subplots(figsize=(8, 4))
-            sns.boxplot(data=filtered_df, x="Membership_Tier", y="Workout_Duration_Mins", palette="Set2", ax=ax)
+            sns.boxplot(
+                data=filtered_df,
+                x="Membership_Tier",
+                y="Workout_Duration_Mins",
+                hue="Membership_Tier",
+                order=available_tiers,
+                palette="Set2",
+                legend=False,
+                ax=ax
+            )
             ax.set_title("Workout Duration Distribution by Tier", fontsize=12, fontweight="bold")
             ax.set_xlabel("Membership Tier")
             ax.set_ylabel("Duration (Mins)")
@@ -142,7 +171,29 @@ def main():
             plt.close()
 
     with tab4:
-        st.subheader("Filtered Check-In Records")
+        st.subheader("Low-Engagement & Inactivity Monitoring (<2 visits/month)")
+        max_date = df["Checkin_Time"].max()
+        member_stats = df.groupby("Member_ID").agg(
+            Membership_Tier=("Membership_Tier", "last"),
+            Monthly_Fee=("Monthly_Fee", "last"),
+            Total_Visits=("Checkin_ID", "count"),
+            First_Checkin=("Checkin_Time", "min"),
+            Last_Checkin=("Checkin_Time", "max")
+        ).reset_index()
+        months_span = df["Checkin_Time"].dt.to_period("M").nunique()
+        member_stats["Avg_Monthly_Visits"] = (member_stats["Total_Visits"] / months_span).round(2)
+        member_stats["Days_Since_Last_Visit"] = (max_date - member_stats["Last_Checkin"]).dt.days
+        member_stats["Engagement_Status"] = np.where(
+            member_stats["Avg_Monthly_Visits"] < 2.0, "At-Risk / Low-Engagement", "Engaged / Regular"
+        )
+        
+        st.dataframe(
+            member_stats.sort_values(by="Days_Since_Last_Visit", ascending=False),
+            use_container_width=True
+        )
+
+    with tab5:
+        st.subheader("Filtered Check-In Records Explorer")
         st.dataframe(filtered_df, use_container_width=True)
         st.download_button(
             "📥 Download Filtered Data as CSV",
