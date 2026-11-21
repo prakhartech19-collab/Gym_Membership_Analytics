@@ -1,5 +1,5 @@
 """
-Project 12: Gym & Fitness Center Membership Analytics
+Gym & Fitness Center Membership Analytics
 ======================================================
 End-to-End Data Analytics Pipeline:
 Data Ingestion, Preprocessing, Behavioral KPIs, NumPy Statistics,
@@ -74,7 +74,7 @@ def style_excel_sheet(ws, title: str = None):
 
 def main():
     print("=" * 85)
-    print(" PROJECT 12: GYM & FITNESS CENTER MEMBERSHIP ANALYTICS ")
+    print(" GYM & FITNESS CENTER MEMBERSHIP ANALYTICS ")
     print(" Complete Step-by-Step Build: 15 Analytical Tasks & Automated Reporting")
     print("=" * 85)
 

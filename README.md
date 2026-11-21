@@ -1,4 +1,4 @@
-# Project 12: Gym & Fitness Center Membership Analytics
+# Gym & Fitness Center Membership Analytics
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Pandas](https://img.shields.io/badge/Pandas-2.2%2B-orange.svg)](https://pandas.pydata.org/)
