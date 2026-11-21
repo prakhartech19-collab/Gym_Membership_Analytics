@@ -670,7 +670,7 @@ def main():
         print(desc)
 
     print("\n" + "=" * 85)
-    print(" PIPELINE EXECUTION COMPLETE: ALL 15 TASKS & DELIVERABLES PRODUCED WITH ZERO ERRORS")
+    print(" PIPELINE EXECUTION COMPLETE: ALL 15 TASKS COMPLETED SUCCESSFULLY")
     print("=" * 85)
 
 
