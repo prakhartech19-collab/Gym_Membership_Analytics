@@ -52,9 +52,8 @@ Gym_Membership_Analytics/
 
 ## Setup & Installation
 
-1. **Clone or navigate to the repository:**
+1. **Navigate to the project directory:**
    ```powershell
-   git clone https://github.com/prakhartech19-collab/Gym_Membership_Analytics.git
    cd Gym_Membership_Analytics
    ```
 
@@ -214,7 +213,8 @@ streamlit run dashboard.py
 ## Author
 
 **Prakhar Tiwari**  
-GitHub: [@prakhartech19-collab](https://github.com/prakhartech19-collab)
+- **Admission No:** 2026B01010421  
+- **Email:** officialprakhar50@gmail.com
 
 ---
 
