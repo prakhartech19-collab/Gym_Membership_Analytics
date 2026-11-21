@@ -211,6 +211,13 @@ streamlit run dashboard.py
 
 ---
 
+## Author
+
+**Prakhar Tiwari**  
+GitHub: [@prakhartech19-collab](https://github.com/prakhartech19-collab)
+
+---
+
 ## License
 
 This project is licensed under the MIT License - feel free to use and adapt it for learning or portfolio purposes.
